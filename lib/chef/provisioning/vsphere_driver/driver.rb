@@ -647,8 +647,7 @@ module ChefProvisioningVsphere
       if vm.guest.toolsRunningStatus != "guestToolsRunning"
         if action_handler.should_perform_actions
           action_handler.report_progress "waiting for #{machine_spec.name} (#{vm.config.instanceUuid} on #{driver_url}) to be ready ..."
-          until remaining_wait_time(machine_spec, machine_options) < 0 ||
-              (vm.guest.toolsRunningStatus == "guestToolsRunning" && vm.guest.ipAddress && !vm.guest.ipAddress.empty?)
+          until remaining_wait_time(machine_spec, machine_options) < 0 || vm_guest_ip?(vm)
             print "."
             sleep 5
           end
@@ -948,7 +947,9 @@ module ChefProvisioningVsphere
     #
     # @param [Object] vm The VM object from Chef-Provisioning
     def vm_guest_ip?(vm)
-      vm.guest.guestState == "running" && vm.guest.toolsRunningStatus == "guestToolsRunning" && !vm.guest.ipAddress.nil?
+      # The docker interface usually has IP like 172.x.x.x, so need to filter it out.
+      vm.guest.guestState == "running" && vm.guest.toolsRunningStatus == "guestToolsRunning" &&
+      !vm.guest.ipAddress.nil? && !vm.guest.ipAddress.empty? && !vm.guest.ipAddress.start_with?("172")
     end
   end
 end
